@@ -1,6 +1,6 @@
 /*
  * jQuery idleTracking 1.0
- * 2013 Luis Ramirez
+ * August 2013 Luis Ramirez
  *
  * Depends:
  *  - jQuery 1.4.2+
@@ -8,6 +8,7 @@
  *  - jQuery Idle Timer (by Paul Irish, https://github.com/mikesherov/jquery-idletimer)
  *  - jQuery Idle Timeout (by Eric Hynds, http://www.erichynds.com/jquery/a-new-and-improved-jquery-idle-timeout-plugin/)
  *
+ * Licensed MIT
  *
 */
 ;(function($, undefined){
@@ -17,9 +18,10 @@
         _localStorage : false,
 
         defaults : {
+            events  : 'mousemove keydown DOMMouseScroll mousewheel mousedown touchstart touchmove',
             timeout : 15,
             logout : '/logout',
-            onReset: $.noop,
+            onUpdate: $.noop,
             onIdle: $.noop
         },
 
@@ -61,12 +63,10 @@
             }
 
             if (obj.timeStamp !== null && obj.dateStamp !== null) {
+                //get our date and time object
+                var cDate = self._createDate();
 
-                var newDate = new Date();
-                var date = (newDate.getUTCMonth() + 1) + '' + newDate.getUTCDate() + '' + newDate.getUTCFullYear();
-                var time = newDate.getTime();
-
-                if(date !== obj.dateStamp || time - obj.timeStamp > (self.settings.timeout * 60) * 1000) {
+                if(cDate.date !== obj.dateStamp || cDate.time - obj.timeStamp > self.settings.timeout * 60000) {
                     self.settings.onIdle.call(self);
                 }
             }
@@ -89,26 +89,32 @@
 
         _events     :   function() {
         var self = idleTracking;
-            //assign appropriate event handlers
-            var events  = 'mousemove keydown DOMMouseScroll mousewheel mousedown touchstart touchmove';
-            $(document).bind(events, function() {
+            //bind event handlers
+            $(document).bind(self.settings.events, function() {
                 self._timeStamp();
             });
         },
 
         _timeStamp :    function() {
             var self = idleTracking;
-            var newDate = new Date();
-            var date = (newDate.getUTCMonth() + 1) + '' + newDate.getUTCDate() + '' + newDate.getUTCFullYear();
-            var time = newDate.getTime();
+            //get our date and time object
+            var cDate = self._createDate();
 
             if (self._localStorage) {
-                localStorage.setItem('idleDate', date);
-                localStorage.setItem('idleTime', time);
+                localStorage.setItem('idleDate', cDate.date);
+                localStorage.setItem('idleTime', cDate.time);
             }
 
-            $(document).data('idleTime', time);
-            $(document).data('idleDate', date);
+            $(document).data('idleDate', cDate.date);
+            $(document).data('idleTime', cDate.time);
+        },
+
+        _createDate :   function() {
+            var obj = {};
+            var newDate = new Date();
+            obj['date'] = (newDate.getUTCMonth() + 1) + '' + newDate.getUTCDate() + '' + newDate.getUTCFullYear();
+            obj['time'] = newDate.getTime();
+            return obj;
         },
 
         houseKeeping   :   function() {
@@ -132,10 +138,10 @@
             window.location = self.settings.logout;
         },
 
-        reset   :   function() {
+        update   :   function() {
             var self = idleTracking;
             self._timeStamp();
-            self.settings.onReset.call(this);
+            self.settings.onUpdate.call(this);
         }
     };
 
@@ -154,9 +160,9 @@
         idleTracking.logout();
         return this;
     };
-    //expose our reset
-    $.idleTracking.reset = function() {
-        idleTracking.reset();
+    //expose our update
+    $.idleTracking.update = function() {
+        idleTracking.update();
         return this;
     };
 
