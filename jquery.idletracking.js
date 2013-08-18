@@ -40,6 +40,7 @@
 
         _localStorageTest   :   function() {
             var self = idleTracking;
+            //thanks modernizr
             try {
                 localStorage.setItem('mod', 'mod');
                 localStorage.removeItem('mod');
